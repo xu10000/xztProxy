@@ -26,7 +26,6 @@ func getRealUrl(b []byte) string {
 		fmt.Println("------ regArr error", _b)
 		return ""
 	}
-	fmt.Println("------getRealUrl function  proxy url", _b)
 	return regArr[1]
 }
 func NewProxy(conn net.Conn) {
@@ -41,7 +40,7 @@ func NewProxy(conn net.Conn) {
 	realUrl := getRealUrl(b)
 
 	// 开始代理
-	// fmt.Println("------ begin server proxy ", "url:www.baidu.com:443")
+	fmt.Println("------ begin server proxy ", realUrl)
 	// // return
 	destConn, err := getClient(realUrl)
 	if err != nil {
@@ -65,5 +64,5 @@ func NewProxy(conn net.Conn) {
 	go utils.IoCopy(&wg, srcConn, destConn)
 	go utils.IoCopy(&wg, destConn, srcConn)
 	wg.Wait()
-	// fmt.Println("------ proxy success")
+	fmt.Println("------ proxy success")
 }

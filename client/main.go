@@ -10,7 +10,7 @@ import (
 var (
 	IP        = "127.0.0.1"
 	PORT      = "8711"
-	CONN_IP   = "127.0.0.1"
+	CONN_IP   = "141.164.37.70"
 	CONN_PORT = "8712"
 )
 

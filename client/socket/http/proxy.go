@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,7 +30,7 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 			"msg": "success",
 		})
 		// 开始代理
-		fmt.Println("------ print", c.Request.URL.Host)
+		fmt.Println("------ begin proxy", c.Request.URL.Host)
 		destConn, err := getClient(proxyUrl)
 		if err != nil {
 			fmt.Println("destConn err ", err)
@@ -45,7 +44,10 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 			// panic(err)
 			return
 		}
-		defer srcConn.Close()
+		defer func() {
+			srcConn.Close()
+			fmt.Println("------ srcConn.Close()")
+		}()
 		// 写入代理数据
 		b := make([]byte, 1024)
 		sUrl := []byte("url:" + c.Request.URL.Host)
@@ -73,7 +75,7 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		go utils.IoCopy(&wg, srcConn, destConn)
 		go utils.IoCopy(&wg, destConn, srcConn)
 		wg.Wait()
-		time.Sleep(time.Second * 10)
-		// fmt.Println("------ proxy success")
+		// time.Sleep(time.Second * 10)
+		fmt.Println("------ proxy success")
 	}
 }
