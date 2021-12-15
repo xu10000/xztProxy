@@ -2,6 +2,7 @@ package http
 
 import (
 	"client/socket"
+	"crypto/tls"
 	"net"
 )
 
@@ -20,8 +21,11 @@ type ClientImpl struct {
 // }
 
 func (c *ClientImpl) Dial(addr string) (net.Conn, error) {
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
 	var err error
-	c.Conn, err = net.Dial("tcp", addr)
+	c.Conn, err = tls.Dial("tcp", addr, conf)
 	if err != nil {
 		return nil, err
 	}

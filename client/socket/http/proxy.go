@@ -42,7 +42,8 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		srcConn, _, err := c.Writer.(http.Hijacker).Hijack()
 		if err != nil {
 			fmt.Println("srcConn err ", err)
-			panic(err)
+			// panic(err)
+			return
 		}
 		defer srcConn.Close()
 		// 写入代理数据
@@ -58,7 +59,8 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 
 		if err != nil {
 			fmt.Println("srcConn err ", err)
-			panic(err)
+			// panic(err)
+			return
 		}
 
 		// _ = destConn

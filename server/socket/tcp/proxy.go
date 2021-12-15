@@ -46,7 +46,8 @@ func NewProxy(conn net.Conn) {
 	destConn, err := getClient(realUrl)
 	if err != nil {
 		fmt.Println("destConn err ", err)
-		panic(err)
+		// panic(err)
+		return
 	}
 	defer destConn.Close()
 
@@ -54,7 +55,8 @@ func NewProxy(conn net.Conn) {
 
 	if err != nil {
 		fmt.Println("srcConn err ", err)
-		panic(err)
+		// panic(err)
+		return
 	}
 	defer srcConn.Close()
 
