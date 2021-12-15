@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +16,13 @@ func getClient(proxyUrl string) (net.Conn, error) {
 }
 
 func NewProxy(proxyUrl string) gin.HandlerFunc {
+	stopCh := make(chan struct{})
+	errCh := make(chan interface{})
+	// timeout
+	go func() {
+		time.Sleep(5 * time.Second)
+		stopCh <- struct{}{}
+	}()
 	return func(c *gin.Context) {
 		if c.Request.Method != "CONNECT" {
 			// fmt.Println(r.Method, r.RequestURI)
@@ -44,10 +51,8 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 			// panic(err)
 			return
 		}
-		defer func() {
-			srcConn.Close()
-			fmt.Println("------ srcConn.Close()")
-		}()
+		defer srcConn.Close()
+
 		// 写入代理数据
 		b := make([]byte, 1024)
 		sUrl := []byte("url:" + c.Request.URL.Host)
@@ -57,7 +62,7 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		b[1] = byte(sLen)
 		copy(b[2:], sUrl)
 		// fmt.Println("------ print len ", len(b))
-		destConn.Write(b)
+		// defer destConn.Write(b)
 
 		if err != nil {
 			fmt.Println("srcConn err ", err)
@@ -70,12 +75,21 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		// fmt.Println("------ begin proxy")
 		// _, err = io.Copy(srcConn, destConn)
 		// fmt.Println("------ print copy err ", err)
-		wg := sync.WaitGroup{}
-		wg.Add(2)
-		go utils.IoCopy(&wg, srcConn, destConn)
-		go utils.IoCopy(&wg, destConn, srcConn)
-		wg.Wait()
+
+		go utils.IoCopy(errCh, srcConn, destConn)
+		go utils.IoCopy(errCh, destConn, srcConn)
+
+		select {
+		case err := <-errCh:
+			fmt.Println("------ errCh ", err.(error))
+			c.Next()
+			return
+		case <-stopCh:
+			fmt.Println("------ stopCh")
+			c.Next()
+			return
+		}
 		// time.Sleep(time.Second * 10)
-		fmt.Println("------ proxy success")
+		// fmt.Println("------ proxy success")
 	}
 }

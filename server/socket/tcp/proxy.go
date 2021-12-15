@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"server/pkg/utils"
 	"sync"
+	"time"
 )
 
 func getClient(addr string) (net.Conn, error) {
@@ -29,12 +30,20 @@ func getRealUrl(b []byte) string {
 	return regArr[1]
 }
 func NewProxy(conn net.Conn) {
+	stopCh := make(chan struct{})
+	errCh := make(chan interface{})
+	// timeout
+	go func() {
+		time.Sleep(5 * time.Second)
+		stopCh <- struct{}{}
+	}()
 	// check proxy address
 	b := make([]byte, 1024)
 	_, err := io.ReadFull(conn, b)
 	if err != nil {
 		fmt.Println(" ReadAll err ", err)
-		panic(err)
+		// panic(err)
+		return
 	}
 	//
 	realUrl := getRealUrl(b)
@@ -61,8 +70,16 @@ func NewProxy(conn net.Conn) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
-	go utils.IoCopy(&wg, srcConn, destConn)
-	go utils.IoCopy(&wg, destConn, srcConn)
-	wg.Wait()
+	go utils.IoCopy(errCh, srcConn, destConn)
+	go utils.IoCopy(errCh, destConn, srcConn)
+	select {
+	case err := <-errCh:
+		fmt.Println("------ errCh ", err.(error))
+		return
+	case <-stopCh:
+		fmt.Println("------ stopCh")
+		return
+	}
+	// time.Sleep(time.Second * 10)
 	fmt.Println("------ proxy success")
 }
