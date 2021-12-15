@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"server/pkg/utils"
 	"sync"
-	"time"
 )
 
 func getClient(addr string) (net.Conn, error) {
@@ -32,11 +31,12 @@ func getRealUrl(b []byte) string {
 func NewProxy(conn net.Conn) {
 	stopCh := make(chan struct{})
 	errCh := make(chan interface{})
+
 	// timeout
-	go func() {
-		time.Sleep(5 * time.Second)
-		stopCh <- struct{}{}
-	}()
+	// go func() {
+	// 	time.Sleep(30 * time.Second)
+	// 	stopCh <- struct{}{}
+	// }()
 	// check proxy address
 	b := make([]byte, 1024)
 	_, err := io.ReadFull(conn, b)
@@ -48,6 +48,9 @@ func NewProxy(conn net.Conn) {
 	//
 	realUrl := getRealUrl(b)
 
+	defer func() {
+		fmt.Println("------ server proxy close", realUrl)
+	}()
 	// 开始代理
 	fmt.Println("------ begin server proxy ", realUrl)
 	// // return
@@ -68,10 +71,19 @@ func NewProxy(conn net.Conn) {
 	}
 	defer srcConn.Close()
 
+	// var bb []byte
+	// bb, err = io.ReadAll(destConn)
+	// fmt.Println("------ printbb", bb, err)
 	wg := sync.WaitGroup{}
 	wg.Add(2)
-	go utils.IoCopy(errCh, srcConn, destConn)
-	go utils.IoCopy(errCh, destConn, srcConn)
+	go utils.IoCopy(&wg, errCh, srcConn, destConn, 1)
+	go utils.IoCopy(&wg, errCh, destConn, srcConn, 2)
+
+	go func() {
+		wg.Wait()
+		stopCh <- struct{}{}
+	}()
+
 	select {
 	case err := <-errCh:
 		fmt.Println("------ errCh ", err.(error))
@@ -81,5 +93,5 @@ func NewProxy(conn net.Conn) {
 		return
 	}
 	// time.Sleep(time.Second * 10)
-	fmt.Println("------ proxy success")
+	// fmt.Println("------ proxy success")
 }
