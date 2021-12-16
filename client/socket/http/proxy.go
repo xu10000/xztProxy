@@ -68,8 +68,8 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 				var n int
 				var err error
 
-				srcConn.SetDeadline(time.Now().Add(3 * time.Second))
-				destConn.SetDeadline(time.Now().Add(3 * time.Second))
+				srcConn.SetDeadline(time.Now().Add(10 * time.Second))
+				destConn.SetDeadline(time.Now().Add(10 * time.Second))
 
 				if n, err = srcConn.Read(b[:]); err != nil {
 					fmt.Println("srcConn read over ", err)
@@ -86,8 +86,8 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		for {
 			var n int
 			var err error
-			srcConn.SetDeadline(time.Now().Add(3 * time.Second))
-			destConn.SetDeadline(time.Now().Add(3 * time.Second))
+			srcConn.SetDeadline(time.Now().Add(10 * time.Second))
+			destConn.SetDeadline(time.Now().Add(10 * time.Second))
 
 			if n, err = destConn.Read(b2[:]); err != nil {
 				fmt.Println("destConn read over ", err)
