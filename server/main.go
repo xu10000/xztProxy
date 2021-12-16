@@ -18,7 +18,10 @@ func main() {
 		log.Println("load cert error ", err)
 		panic(err)
 	}
-	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		// KeepAlive: 1000 * time.Second
+	}
 	localUrl := CONN_IP + ":" + CONN_PORT
 	// 拦截所有请求再做转发
 	listener, err := tls.Listen("tcp", localUrl, config)
@@ -37,6 +40,4 @@ func main() {
 		go tcp.NewProxy(conn)
 	}
 
-	// server := tcp.NewServer(host)
-	// server.Start()
 }

@@ -1,11 +1,9 @@
 package http
 
 import (
-	"client/pkg/utils"
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,13 +20,6 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		defer func() {
 			fmt.Println("------ client proxy close", c.Request.URL.Host)
 		}()
-		stopCh := make(chan struct{})
-		errCh := make(chan interface{})
-		// timeout
-		// go func() {
-		// 	time.Sleep(5 * time.Second)
-		// 	stopCh <- struct{}{}
-		// }()
 
 		if c.Request.Method != "CONNECT" {
 			// fmt.Println(r.Method, r.RequestURI)
@@ -69,39 +60,45 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		copy(b[2:], sUrl)
 		// fmt.Println("------ print len ", len(b))
 		destConn.Write(b)
-		// destConn.Close()
-		// return
-		// if err != nil {
-		// 	fmt.Println("srcConn err ", err)
-		// 	// panic(err)
-		// 	return
-		// }
 
-		// _ = destConn
-		// _ = srcConn
-		// fmt.Println("------ begin proxy")
-		// _, err = io.Copy(srcConn, destConn)
-		// fmt.Println("------ print copy err ", err)
-		wg := sync.WaitGroup{}
-		wg.Add(2)
+		//srcConn -> destConn
 		go func() {
-			// wg.Wait()
-			time.Sleep(time.Second * 3)
-			stopCh <- struct{}{}
-		}()
-		go utils.IoCopy(&wg, errCh, srcConn, destConn, 1)
-		go utils.IoCopy(&wg, errCh, destConn, srcConn, 2)
+			var b [1024 * 2]byte
+			for {
+				var n int
+				var err error
 
-		select {
-		case err2 := <-errCh:
-			fmt.Println("------ errCh ", err2.(error))
-			return
-		case <-stopCh:
-			fmt.Println("------ stopCh ", c.Request.URL.Host)
-			// c.Abort()
-			return
+				srcConn.SetDeadline(time.Now().Add(3 * time.Second))
+				destConn.SetDeadline(time.Now().Add(3 * time.Second))
+
+				if n, err = srcConn.Read(b[:]); err != nil {
+					fmt.Println("srcConn read over ", err)
+					return
+				}
+				if _, err = destConn.Write(b[:n]); err != nil {
+					fmt.Println("destConn write err ", err)
+					return
+				}
+			}
+		}()
+		// destConn -> srcConn
+		var b2 [1024 * 2]byte
+		for {
+			var n int
+			var err error
+			srcConn.SetDeadline(time.Now().Add(3 * time.Second))
+			destConn.SetDeadline(time.Now().Add(3 * time.Second))
+
+			if n, err = destConn.Read(b2[:]); err != nil {
+				fmt.Println("destConn read over ", err)
+				return
+			}
+
+			if _, err = srcConn.Write(b2[:n]); err != nil {
+				fmt.Println("srcConn write err ", err)
+				return
+			}
 		}
-		// time.Sleep(time.Second * 10)
 		// fmt.Println("------ proxy success")
 	}
 }
