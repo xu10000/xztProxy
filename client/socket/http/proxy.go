@@ -51,15 +51,15 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		defer srcConn.Close()
 
 		// 写入代理数据
-		b := make([]byte, 1024)
 		sUrl := []byte("url:" + c.Request.URL.Host)
 		sLen := int16(len(sUrl))
-		// bigEndian
+		// bigEndian tcp最大包是65536字节，所以server端一次是可以write到完整的url路径
+		var b [1024]byte
 		b[0] = byte(sLen >> 8)
 		b[1] = byte(sLen)
 		copy(b[2:], sUrl)
 		// fmt.Println("------ print len ", len(b))
-		destConn.Write(b)
+		destConn.Write(b[:sLen+2])
 
 		//srcConn -> destConn
 		go func() {
@@ -99,6 +99,5 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 				return
 			}
 		}
-		// fmt.Println("------ proxy success")
 	}
 }

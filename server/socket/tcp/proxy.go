@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"regexp"
 	"server/pkg/utils"
@@ -16,8 +15,7 @@ func getClient(addr string) (net.Conn, error) {
 
 func getRealUrl(b []byte) string {
 	// 自定义简单协议
-	_bLen := b[0]<<8 + b[1]
-	_b := string(b[2 : _bLen+2])
+	_b := string(b[2:])
 	// var realUrl string
 	reg := regexp.MustCompile(`url:(\S+)`)
 	regArr := reg.FindStringSubmatch(_b)
@@ -29,24 +27,16 @@ func getRealUrl(b []byte) string {
 	return regArr[1]
 }
 func NewProxy(conn net.Conn) {
-	stopCh := make(chan struct{})
-	errCh := make(chan interface{})
-
-	// timeout
-	// go func() {
-	// 	time.Sleep(30 * time.Second)
-	// 	stopCh <- struct{}{}
-	// }()
-	// check proxy address
-	b := make([]byte, 1024)
-	_, err := io.ReadFull(conn, b)
+	// tcp最大包是65536字节，所以server端一次是可以write到完整的url路径
+	var b [1024]byte
+	n, err := conn.Read(b[:])
 	if err != nil {
 		fmt.Println(" ReadAll err ", err)
 		// panic(err)
 		return
 	}
 	//
-	realUrl := getRealUrl(b)
+	realUrl := getRealUrl(b[:n])
 
 	defer func() {
 		fmt.Println("------ server proxy close", realUrl)
@@ -71,27 +61,11 @@ func NewProxy(conn net.Conn) {
 	}
 	defer srcConn.Close()
 
-	// var bb []byte
-	// bb, err = io.ReadAll(destConn)
-	// fmt.Println("------ printbb", bb, err)
 	wg := sync.WaitGroup{}
 	wg.Add(2)
-	go utils.IoCopy(&wg, errCh, srcConn, destConn, 1)
-	go utils.IoCopy(&wg, errCh, destConn, srcConn, 2)
+	go utils.IoCopy(&wg, srcConn, destConn)
+	go utils.IoCopy(&wg, destConn, srcConn)
 
-	go func() {
-		wg.Wait()
-		stopCh <- struct{}{}
-	}()
+	wg.Wait()
 
-	select {
-	case err := <-errCh:
-		fmt.Println("------ errCh ", err.(error))
-		return
-	case <-stopCh:
-		fmt.Println("------ stopCh")
-		return
-	}
-	// time.Sleep(time.Second * 10)
-	// fmt.Println("------ proxy success")
 }

@@ -22,6 +22,4 @@ func main() {
 	router.Use(clientHttp.NewProxy(proxyUrl))
 	http.ListenAndServe(localUrl, router)
 
-	// server := tcp.NewServer(host)
-	// server.Start()
 }
