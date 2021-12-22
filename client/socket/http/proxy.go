@@ -14,7 +14,7 @@ func getClient(proxyUrl string) (net.Conn, error) {
 	return cli.Dial(proxyUrl)
 }
 
-func NewProxy(proxyUrl string) gin.HandlerFunc {
+func NewProxy(proxyUrl, password string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		defer func() {
@@ -41,6 +41,10 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 
 		// 写入代理数据
 		Url := c.Request.URL.Host
+		if c.Request.URL.Scheme == "http" && c.Request.URL.Port() == "" {
+			Url = Url + ":80"
+		}
+		Url = Url + password
 		var b [1024]byte
 		n := copy(b[:], []byte(Url))
 		// fmt.Println("------ print len ", len(b))
