@@ -27,6 +27,10 @@ func NewProxy(srcConn net.Conn) {
 		// panic(err)
 		return
 	}
+	if n < hashLen {
+		fmt.Println("------ print n < hashLen", hashLen)
+		return
+	}
 	realUrl := string(b[:n-hashLen])
 	password := string(b[n-64 : n])
 	localPort := strconv.Itoa(srcConn.LocalAddr().(*net.TCPAddr).Port)
