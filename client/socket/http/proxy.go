@@ -21,18 +21,6 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 			fmt.Println("------ client proxy close", c.Request.URL.Host)
 		}()
 
-		if c.Request.Method != "CONNECT" {
-			// fmt.Println(r.Method, r.RequestURI)
-			c.JSON(404, gin.H{
-				"msg": "NOT FOUND, PLS USE HTTPS",
-			})
-			return
-		}
-
-		// c.Request.Method
-		c.JSON(200, gin.H{
-			"msg": "success",
-		})
 		// 开始代理
 		fmt.Println("------ begin proxy", c.Request.URL.Host)
 		destConn, err := getClient(proxyUrl)
@@ -40,6 +28,7 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 			fmt.Println("destConn err ", err)
 			panic(err)
 		}
+
 		defer destConn.Close()
 
 		srcConn, _, err := c.Writer.(http.Hijacker).Hijack()
@@ -51,15 +40,25 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 		defer srcConn.Close()
 
 		// 写入代理数据
-		sUrl := []byte("url:" + c.Request.URL.Host)
-		sLen := int16(len(sUrl))
-		// bigEndian tcp最大包是65536字节，所以server端一次是可以write到完整的url路径
+		Url := c.Request.URL.Host
 		var b [1024]byte
-		b[0] = byte(sLen >> 8)
-		b[1] = byte(sLen)
-		copy(b[2:], sUrl)
+		n := copy(b[:], []byte(Url))
 		// fmt.Println("------ print len ", len(b))
-		destConn.Write(b[:sLen+2])
+		destConn.Write(b[:n])
+
+		// http
+		if c.Request.Method != "CONNECT" {
+
+			err := c.Request.WriteProxy(destConn)
+			if err != nil {
+				fmt.Println("WriteProxy err ", err)
+				return
+			}
+
+		} else {
+			// https
+			srcConn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
+		}
 
 		//srcConn -> destConn
 		go func() {
@@ -93,6 +92,8 @@ func NewProxy(proxyUrl string) gin.HandlerFunc {
 				fmt.Println("destConn read over ", err)
 				return
 			}
+
+			// fmt.Println("------ print n", n)
 
 			if _, err = srcConn.Write(b2[:n]); err != nil {
 				fmt.Println("srcConn write err ", err)
