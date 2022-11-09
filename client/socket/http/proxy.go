@@ -2,8 +2,10 @@ package http
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,8 +15,15 @@ func getClient(proxyUrl string) (net.Conn, error) {
 	cli := NewClient()
 	return cli.Dial(proxyUrl)
 }
+func randomPortAndPassword(port, portNumber int, passwordArr []string) (newPort string, password string) {
+	_num := rand.Intn(portNumber)
+	newPort = strconv.Itoa(port + _num)
+	password = passwordArr[_num]
+	fmt.Printf("---random port: %s\n", newPort)
+	return
+}
 
-func NewProxy(proxyUrl, password string) gin.HandlerFunc {
+func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		defer func() {
@@ -23,21 +32,33 @@ func NewProxy(proxyUrl, password string) gin.HandlerFunc {
 
 		// 开始代理
 		fmt.Println("------ begin proxy", c.Request.URL.Host)
-		destConn, err := getClient(proxyUrl)
-		if err != nil {
-			fmt.Println("destConn err ", err)
-			panic(err)
+		var destConn net.Conn
+		var srcConn net.Conn
+
+		defer func() {
+			destConn.Close()
+			srcConn.Close()
+		}()
+
+		var newPort string
+		var password string
+		var err error
+		for {
+			newPort, password = randomPortAndPassword(port, portNumber, passwordArr)
+			proxyUrl := ip + ":" + newPort
+			destConn, err = getClient(proxyUrl)
+			if err != nil {
+				fmt.Println("destConn err ", err)
+				continue
+			}
+			break
 		}
 
-		defer destConn.Close()
-
-		srcConn, _, err := c.Writer.(http.Hijacker).Hijack()
+		srcConn, _, err = c.Writer.(http.Hijacker).Hijack()
 		if err != nil {
 			fmt.Println("srcConn err ", err)
-			// panic(err)
 			return
 		}
-		defer srcConn.Close()
 
 		// 写入代理数据
 		Url := c.Request.URL.Host

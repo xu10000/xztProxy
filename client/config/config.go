@@ -1,7 +1,7 @@
 package config
 
 type Config struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Password string `json:"password"`
+	Host        string   `json:"host"`
+	BeginPort   int      `json:"beginPort"`
+	PasswordArr []string `json:"passwordArr"`
 }

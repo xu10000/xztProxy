@@ -5,18 +5,18 @@ import (
 	clientHttp "client/socket/http"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
 var (
-	IP        = "127.0.0.1"
-	PORT      = "8711"
-	CONN_IP   string
-	CONN_PORT string
-	Config    config.Config
+	IP         = "127.0.0.1"
+	PORT       = "8711"
+	CONN_IP    string
+	CONN_PORT  int
+	Config     config.Config
+	PortNumber = 25
 )
 
 func init() {
@@ -32,14 +32,13 @@ func init() {
 	}
 
 	CONN_IP = Config.Host
-	CONN_PORT = strconv.Itoa(Config.Port)
+	CONN_PORT = Config.BeginPort
 }
 
 func main() {
 	localUrl := IP + ":" + PORT
-	proxyUrl := CONN_IP + ":" + CONN_PORT
 	router := gin.Default()
-	router.Use(clientHttp.NewProxy(proxyUrl, Config.Password))
+	router.Use(clientHttp.NewProxy(PortNumber, CONN_IP, CONN_PORT, Config.PasswordArr))
 	http.ListenAndServe(localUrl, router)
 
 }
