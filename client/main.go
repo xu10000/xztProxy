@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	IP         = "127.0.0.1"
+	IP         = "0.0.0.0"
 	PORT       = "8711"
 	CONN_IP    string
 	CONN_PORT  int
