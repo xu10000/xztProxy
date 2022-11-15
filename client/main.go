@@ -11,12 +11,12 @@ import (
 )
 
 var (
-	IP         = "0.0.0.0"
-	PORT       = "8711"
-	CONN_IP    string
-	CONN_PORT  int
-	Config     config.Config
-	PortNumber = 25
+	IP          = "0.0.0.0"
+	PORT        = "8711"
+	CONN_IP     string
+	CONN_PORT   int
+	Config      config.Config
+	PORT_NUMBER int
 )
 
 func init() {
@@ -33,12 +33,13 @@ func init() {
 
 	CONN_IP = Config.Host
 	CONN_PORT = Config.BeginPort
+	PORT_NUMBER = len(Config.PasswordArr)
 }
 
 func main() {
 	localUrl := IP + ":" + PORT
 	router := gin.Default()
-	router.Use(clientHttp.NewProxy(PortNumber, CONN_IP, CONN_PORT, Config.PasswordArr))
+	router.Use(clientHttp.NewProxy(PORT_NUMBER, CONN_IP, CONN_PORT, Config.PasswordArr))
 	http.ListenAndServe(localUrl, router)
 
 }
