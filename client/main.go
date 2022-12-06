@@ -57,12 +57,11 @@ func xztProxy(_ *http.Request) (*url.URL, error) {
 
 func requestTask() {
 	rand.Seed(time.Now().Unix())
+	transport := &http.Transport{Proxy: xztProxy}
 	for {
 		gapTime := time.Duration(rand.Intn(5)) * time.Second
 		fmt.Println("\n---gapTime ", gapTime)
 		time.Sleep(gapTime)
-
-		transport := &http.Transport{Proxy: xztProxy}
 		client := &http.Client{Transport: transport}
 		resp, err := client.Get("http://www.google.com")
 		resp.Body.Close()
