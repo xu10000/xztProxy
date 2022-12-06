@@ -4,6 +4,7 @@ import (
 	"client/config"
 	clientHttp "client/socket/http"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
@@ -55,9 +56,9 @@ func xztProxy(_ *http.Request) (*url.URL, error) {
 }
 
 func requestTask() {
-
+	rand.Seed(time.Now().Unix())
 	for {
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 
 		transport := &http.Transport{Proxy: xztProxy}
 		client := &http.Client{Transport: transport}
