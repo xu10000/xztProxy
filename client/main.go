@@ -58,7 +58,9 @@ func xztProxy(_ *http.Request) (*url.URL, error) {
 func requestTask() {
 	rand.Seed(time.Now().Unix())
 	for {
-		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+		gapTime := time.Duration(rand.Intn(5)) * time.Second
+		fmt.Println("gapTime ", gapTime)
+		time.Sleep(gapTime)
 
 		transport := &http.Transport{Proxy: xztProxy}
 		client := &http.Client{Transport: transport}
