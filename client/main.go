@@ -59,7 +59,7 @@ func requestTask() {
 	rand.Seed(time.Now().Unix())
 	transport := &http.Transport{Proxy: xztProxy}
 	for {
-		time.Sleep(time.Hour)
+		time.Sleep(30 * time.Minute)
 		client := &http.Client{Transport: transport}
 		resp, err := client.Get("http://www.google.com")
 		if err == nil {
