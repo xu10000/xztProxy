@@ -59,12 +59,12 @@ func requestTask() {
 	rand.Seed(time.Now().Unix())
 	transport := &http.Transport{Proxy: xztProxy}
 	for {
-		gapTime := time.Duration(rand.Intn(5)) * time.Second
-		fmt.Println("\n---gapTime ", gapTime)
-		time.Sleep(gapTime)
+		time.Sleep(time.Hour)
 		client := &http.Client{Transport: transport}
 		resp, err := client.Get("http://www.google.com")
-		resp.Body.Close()
+		if err == nil {
+			resp.Body.Close()
+		}
 		fmt.Printf("resp %+v err %+v", resp, err)
 	}
 }
