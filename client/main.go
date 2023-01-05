@@ -42,7 +42,7 @@ func init() {
 
 func main() {
 
-	go requestTask()
+	// go requestTask()
 
 	localUrl := IP + ":" + PORT
 	router := gin.Default()

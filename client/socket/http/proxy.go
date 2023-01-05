@@ -48,6 +48,7 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 			proxyUrl := ip + ":" + newPort
 			destConn, err = getClient(proxyUrl)
 			if err != nil {
+				destConn.Close()
 				fmt.Println("destConn err ", err)
 				continue
 			}
