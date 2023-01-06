@@ -48,7 +48,9 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 			proxyUrl := ip + ":" + newPort
 			destConn, err = getClient(proxyUrl)
 			if err != nil {
-				destConn.Close()
+				if destConn != nil {
+					destConn.Close()
+				}
 				fmt.Println("destConn err ", err)
 				continue
 			}
@@ -57,6 +59,9 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 
 		srcConn, _, err = c.Writer.(http.Hijacker).Hijack()
 		if err != nil {
+			if srcConn != nil {
+				srcConn.Close()
+			}
 			fmt.Println("srcConn err ", err)
 			return
 		}
@@ -93,15 +98,19 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 				var n int
 				var err error
 
-				srcConn.SetDeadline(time.Now().Add(10 * time.Second))
-				destConn.SetDeadline(time.Now().Add(10 * time.Second))
+				srcConn.SetDeadline(time.Now().Add(3 * time.Second))
+				// destConn.SetDeadline(time.Now().Add(3 * time.Second))
 
 				if n, err = srcConn.Read(b[:]); err != nil {
 					fmt.Println("srcConn read over ", err)
+					srcConn.Close()
+					destConn.Close()
 					return
 				}
 				if _, err = destConn.Write(b[:n]); err != nil {
 					fmt.Println("destConn write err ", err)
+					srcConn.Close()
+					destConn.Close()
 					return
 				}
 			}
@@ -111,8 +120,8 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 		for {
 			var n int
 			var err error
-			srcConn.SetDeadline(time.Now().Add(10 * time.Second))
-			destConn.SetDeadline(time.Now().Add(10 * time.Second))
+			// srcConn.SetDeadline(time.Now().Add(3 * time.Second))
+			destConn.SetDeadline(time.Now().Add(3 * time.Second))
 
 			if n, err = destConn.Read(b2[:]); err != nil {
 				fmt.Println("destConn read over ", err)
