@@ -3,10 +3,9 @@ package tcp
 import (
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"net"
-	"server/pkg/utils"
 	"strconv"
-	"sync"
 )
 
 var (
@@ -39,32 +38,56 @@ func NewProxy(srcConn net.Conn) {
 		fmt.Println("------ password != localPassword", LocalPassword)
 		return
 	}
-	defer func() {
-		fmt.Println("------ server proxy close", realUrl)
-	}()
+
 	// 开始代理
 	fmt.Println("------ begin server proxy ", realUrl)
 	// // return
 	destConn, err := getClient(realUrl)
 	if err != nil {
 		fmt.Println("destConn err ", err)
-		// panic(err)
+		if srcConn != nil {
+			srcConn.Close()
+		}
+		if destConn != nil {
+			destConn.Close()
+		}
 		return
 	}
-	defer destConn.Close()
+
+	defer func() {
+		if srcConn != nil {
+			srcConn.Close()
+		}
+		if destConn != nil {
+			destConn.Close()
+		}
+		fmt.Println("------ server proxy close", realUrl)
+	}()
 
 	if err != nil {
 		fmt.Println("srcConn err ", err)
 		// panic(err)
 		return
 	}
-	defer srcConn.Close()
 
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go utils.IoCopy(&wg, srcConn, destConn)
-	go utils.IoCopy(&wg, destConn, srcConn)
+	stopChan := make(chan int)
+	go func() {
+		if _, err := io.Copy(srcConn, destConn); err != nil {
+			fmt.Println("------iocopy print1", err)
+			stopChan <- 1
+		}
+	}()
+	go func() {
+		//进行全双工的双向数据拷贝（中继）
+		if _, err := io.Copy(destConn, srcConn); err != nil {
+			fmt.Println("------iocopy print2", err)
+			stopChan <- 1
+		} //relay:dst->src
+		fmt.Println("------ end server proxy ", realUrl)
+		stopChan <- 1
+	}()
 
-	wg.Wait()
+	<-stopChan
+	fmt.Println("------ end server proxy ", realUrl)
 
 }

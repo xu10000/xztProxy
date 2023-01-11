@@ -1,4 +1,4 @@
-host: hongkong.hihjj.com
+host: 127.0.0.1
 beginPort: 8713
 passwordArr:
   - 1d7da4ec8139e96eda38d68f39d80135c4613e36bfe12639afc2af59b6634172
