@@ -11,7 +11,7 @@ import (
 
 var (
 	config Config
-	maxLen = 100
+	maxLen = 2000
 )
 
 func readConfig() {

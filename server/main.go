@@ -10,8 +10,8 @@ import (
 
 var (
 	CONN_IP       = "0.0.0.0"
-	CONN_PORT     = 8712
-	CONN_MAX_PORT = 8912
+	CONN_PORT     = 9000
+	CONN_MAX_PORT = 11000
 )
 
 func main() {
