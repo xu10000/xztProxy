@@ -117,7 +117,7 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 		for {
 			var n int
 			var err error
-			srcConn.SetDeadline(time.Now().Add(30 * time.Second))
+			srcConn.SetDeadline(time.Now().Add(3 * time.Second))
 			destConn.SetDeadline(time.Now().Add(3 * time.Second))
 
 			if n, err = destConn.Read(b2[:]); err != nil {
