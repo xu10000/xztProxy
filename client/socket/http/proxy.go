@@ -36,24 +36,32 @@ func NewProxy(portNumber int, ip string, port int, passwordArr []string) gin.Han
 		var srcConn net.Conn
 
 		defer func() {
-			destConn.Close()
-			srcConn.Close()
+			if destConn != nil {
+				destConn.Close()
+			}
+			if srcConn != nil {
+				srcConn.Close()
+			}
 		}()
 
 		var newPort string
 		var password string
 		var err error
-		for {
+		// var countMap map[string]string
+		for i := 0; ; i++ {
 			newPort, password = randomPortAndPassword(port, portNumber, passwordArr)
 			proxyUrl := ip + ":" + newPort
 			destConn, err = getClient(proxyUrl)
 			if err != nil {
-				if destConn != nil {
-					destConn.Close()
+				if i < 3 {
+					fmt.Println("destConn err X ", i, err)
+					time.Sleep(3 * time.Second)
+					continue
 				}
-				fmt.Println("destConn err ", err)
-				continue
+				fmt.Println("destConn err retry 3times ", err)
+				return
 			}
+			// 正常
 			break
 		}
 
